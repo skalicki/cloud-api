@@ -1,4 +1,4 @@
-Feature: Example feature
+Feature: App feature
 
   Scenario: Successful API request
     Given I send a GET request to "/"
