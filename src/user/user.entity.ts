@@ -33,6 +33,6 @@ export class User {
     @UpdateDateColumn({ comment: 'The date when the user profile was last updated' })
     updatedAt: Date;
 
-    @OneToMany(() => File, (file) => file.owner, { cascade: true })
-    files: File[];
+    // @OneToMany(() => File, (file) => file.owner, { cascade: true })
+    // files: File[];
 }

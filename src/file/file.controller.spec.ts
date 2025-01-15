@@ -1,18 +1,38 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { FileController } from './file.controller';
+import { FileService } from './file.service';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { File } from './file.entity';
 import { v4 } from 'uuid';
 import * as fs from 'fs';
 import * as path from 'path';
 
 describe('FileController', () => {
   let controller: FileController;
+  let service: FileService;
+  let repository: Repository<File>;
 
   beforeEach(async () => {
+    const repositoryMock = {
+      save: jest.fn().mockImplementation((file) => Promise.resolve({ ...file, id: v4() })),
+      create: jest.fn().mockImplementation((fileData) => ({ ...fileData })),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [FileController],
+      providers: [
+        FileService,
+        {
+          provide: getRepositoryToken(File),
+          useValue: repositoryMock,
+        },
+      ],
     }).compile();
 
     controller = module.get<FileController>(FileController);
+    service = module.get<FileService>(FileService);
+    repository = module.get<Repository<File>>(getRepositoryToken(File));
   });
 
   afterEach(() => {
@@ -27,7 +47,6 @@ describe('FileController', () => {
   });
 
   it('should upload a file and return success message', async () => {
-    // Mock Express file object
     const file: Express.Multer.File = {
       fieldname: 'file',
       originalname: 'testfile.txt',
@@ -42,14 +61,17 @@ describe('FileController', () => {
     };
 
     const response = await controller.upload(file);
-    const uploadedFilePath = path.join(file.destination, file.filename);
-
-    fs.writeFileSync(uploadedFilePath, file.buffer);
-
-    expect(fs.existsSync(uploadedFilePath)).toBe(true);
     expect(response).toEqual({
       message: 'Upload successful',
-      filename: file.filename,
+      file: expect.objectContaining({ name: file.originalname }),
+    });
+
+    expect(repository.save).toHaveBeenCalledWith({
+      name: file.originalname,
+      path: `./uploads/${file.filename}`,
+      mimeType: file.mimetype,
+      size: file.size,
+      isPublic: false,
     });
   });
 
@@ -75,7 +97,7 @@ describe('FileController', () => {
     const response1 = await controller.upload(file1);
     const response2 = await controller.upload(file2);
 
-    expect(response1.filename).not.toEqual(response2.filename);
+    expect(response1.file.path).not.toEqual(response2.file.path);
   });
 
   it('should throw an error if no file is uploaded', async () => {

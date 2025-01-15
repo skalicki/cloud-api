@@ -1,36 +1,50 @@
-import { Given, Then } from '@cucumber/cucumber';
+import { AfterAll, BeforeAll, Given, Then } from '@cucumber/cucumber';
 import * as request from 'supertest';
-import { Test } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import { AppModule } from '../../src/app.module';
+import { INestApplication } from "@nestjs/common";
+import { File } from "../../src/file/file.entity";
+import { Test } from "@nestjs/testing";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { FileController } from "../../src/file/file.controller";
+import { FileService } from "../../src/file/file.service";
 
 let app: INestApplication;
-let response: request.Response;
 
-Given('I send a POST request to {string} with the file {string}', async (url: string, filename: string) => {
+BeforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
-        imports: [AppModule],
+        imports: [
+            TypeOrmModule.forRoot({
+                type: 'sqlite',
+                database: ':memory:',
+                entities: [File],
+                synchronize: true,
+            }),
+            TypeOrmModule.forFeature([File]),
+        ],
+        controllers: [FileController],
+        providers: [FileService],
     }).compile();
 
     app = moduleRef.createNestApplication();
     await app.init();
+});
 
+AfterAll(async () => {
+    if (app) {
+        await app.close();
+    }
+});
+
+let response: request.Response;
+
+Given('I send a POST request to {string} with the file {string}', async (url: string, filename: string) => {
     response = await request(app.getHttpServer())
         .post(url)
         .attach('file', `test/file/uploads/${filename}`);
 });
 
 Given('I send a POST request to {string} without a file', async (url: string) => {
-    const moduleRef = await Test.createTestingModule({
-        imports: [AppModule],
-    }).compile();
-
-    app = moduleRef.createNestApplication();
-    await app.init();
-
     response = await request(app.getHttpServer()).post(url);
 });
-
 
 Then('the server should respond with a {int} status code', (statusCode: number) => {
     if (response.status !== statusCode) {

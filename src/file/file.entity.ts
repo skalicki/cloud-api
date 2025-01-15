@@ -21,8 +21,8 @@ export class File {
     @Column({ default: false, comment: 'Indicates whether the file is publicly accessible' })
     isPublic: boolean;
 
-    @ManyToOne(() => User, (user) => user.files)
-    owner: User;
+    // @ManyToOne(() => User, (user) => user.files)
+    // owner: User;
 
     @CreateDateColumn({ comment: 'The date when the file was uploaded' })
     createdAt: Date;
@@ -30,6 +30,6 @@ export class File {
     @UpdateDateColumn({ comment: 'The date when the file was last modified' })
     updatedAt: Date;
 
-    @Column('simple-array', { nullable: true, comment: 'List of user IDs with whom the file is shared' })
-    sharedWith: string[];
+    // @Column('simple-array', { nullable: true, comment: 'List of user IDs with whom the file is shared' })
+    // sharedWith: string[];
 }
