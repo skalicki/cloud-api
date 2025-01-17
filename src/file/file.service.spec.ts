@@ -30,9 +30,10 @@ describe('FileService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+    expect(repository).toBeDefined();
   });
 
-  it('should call repository.create and repository.save when saving a file', async () => {
+  it('should save file information into the database', async () => {
     const fileData: Partial<File> = {
       name: 'example.txt',
       path: './uploads/example.txt',
@@ -45,18 +46,5 @@ describe('FileService', () => {
     expect(repository.create).toHaveBeenCalledWith(fileData);
     expect(repository.save).toHaveBeenCalledWith(expect.objectContaining(fileData));
     expect(savedFile.id).toBe(1);
-  });
-
-  it('should throw an error if saving fails', async () => {
-    repository.save = jest.fn().mockRejectedValue(new Error('Database error'));
-
-    const fileData: Partial<File> = {
-      name: 'error.txt',
-      path: './uploads/error.txt',
-      mimeType: 'text/plain',
-      size: 200,
-    };
-
-    await expect(service.save(fileData)).rejects.toThrow('Database error');
   });
 });

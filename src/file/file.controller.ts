@@ -2,6 +2,7 @@ import { BadRequestException, Controller, Post, UploadedFile, UseInterceptors } 
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { v4 } from 'uuid';
+import * as path from 'path';
 import { File } from './file.entity';
 import { FileService } from './file.service';
 
@@ -14,26 +15,13 @@ export class FileController {
         storage: diskStorage({
             destination: './uploads',
             filename: (req, file, callback) => {
-                const uniqueName = `${v4()}-${file.originalname}`;
+                const ext = path.extname(file.originalname);
+                const uniqueName = `${v4()}${ext}`;
                 callback(null, uniqueName);
             },
         }),
     }))
     async upload(@UploadedFile() file: Express.Multer.File) {
-        if (!file) {
-            throw new BadRequestException('No file uploaded');
-        }
-
-        const fileData: Partial<File> = {
-            name: file.originalname,
-            path: `./uploads/${file.filename}`,
-            mimeType: file.mimetype,
-            size: file.size,
-            isPublic: false,
-        };
-
-        const savedFile = await this.fileService.save(fileData);
-
-        return { message: 'Upload successful', file: savedFile };
+        return { message: 'Upload successful', file: await this.fileService.upload(file) };
     }
 }
