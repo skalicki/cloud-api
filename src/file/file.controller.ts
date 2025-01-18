@@ -1,9 +1,8 @@
-import { BadRequestException, Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { v4 } from 'uuid';
 import * as path from 'path';
-import { File } from './file.entity';
 import { FileService } from './file.service';
 
 @Controller('file')

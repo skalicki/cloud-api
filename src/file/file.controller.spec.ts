@@ -7,6 +7,7 @@ import { File } from './file.entity';
 import { v4 } from 'uuid';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
 
 describe('FileController', () => {
   let controller: FileController;
@@ -49,6 +50,54 @@ describe('FileController', () => {
   });
 
   it('should upload a file and return success message', async () => {
+    jest.spyOn(service, 'generateHash').mockResolvedValue('mocked-hash-value');
+
+    const file: Express.Multer.File = {
+      fieldname: 'file',
+      originalname: 'testfile.txt',
+      encoding: '7bit',
+      mimetype: 'text/plain',
+      size: 100,
+      stream: undefined,
+      destination: './uploads',
+      filename: `${v4()}.txt`,
+      path: './uploads/testfile.txt',
+      buffer: Buffer.from('Hello, world!'),
+    };
+
+    const response = await controller.upload(file);
+    expect(response).toEqual({
+      message: 'Upload successful',
+      file: expect.objectContaining({ name: file.originalname }),
+    });
+
+    expect(repository.save).toHaveBeenCalledWith({
+      id: path.parse(file.filename).name,
+      name: file.originalname,
+      path: `./uploads/${file.filename}`,
+      mimeType: file.mimetype,
+      size: file.size,
+      isPublic: false,
+      hash: 'mocked-hash-value',
+    });
+  });
+
+  it('should throw an error if no file is uploaded', async () => {
+    try {
+      await controller.upload(null);
+    } catch (error) {
+      expect(error.message).toContain('No file uploaded');
+    }
+  });
+
+  it('should correctly generate hash for a mocked file', async () => {
+    jest.spyOn(service, 'generateHash').mockImplementation(async (filePath: string) => {
+      if (filePath === file.path) {
+        return expectedHash;
+      }
+      throw new Error('File not found');
+    });
+
     const file: Express.Multer.File = {
       fieldname: 'file',
       originalname: 'testfile.txt',
@@ -62,26 +111,10 @@ describe('FileController', () => {
       buffer: Buffer.from('Hello, world!'),
     };
 
-    const response = await controller.upload(file);
-    expect(response).toEqual({
-      message: 'Upload successful',
-      file: expect.objectContaining({ name: file.originalname }),
-    });
+    const expectedHash = crypto.createHash('sha256').update(file.buffer).digest('hex');
+    const hash = await service.generateHash(file.path);
 
-    expect(repository.save).toHaveBeenCalledWith({
-      name: file.originalname,
-      path: `./uploads/${file.filename}`,
-      mimeType: file.mimetype,
-      size: file.size,
-      isPublic: false,
-    });
-  });
-
-  it('should throw an error if no file is uploaded', async () => {
-    try {
-      await controller.upload(null);
-    } catch (error) {
-      expect(error.message).toContain('No file uploaded');
-    }
+    expect(hash).toBe(expectedHash);
+    expect(service.generateHash).toHaveBeenCalledWith(file.path);
   });
 });

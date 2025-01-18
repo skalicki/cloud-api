@@ -1,7 +1,8 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, Unique } from 'typeorm';
 import { User } from '../user/user.entity';
 
 @Entity('files')
+@Unique(['hash'])
 export class File {
     @PrimaryGeneratedColumn('uuid', { comment: 'Unique UUID for the file' })
     id: string;
@@ -17,6 +18,9 @@ export class File {
 
     @Column({ comment: 'Size of the file in bytes' })
     size: number;
+
+    @Column({ comment: 'SHA-256 hash of the file for integrity verification' })
+    hash: string;
 
     @Column({ default: false, comment: 'Indicates whether the file is publicly accessible' })
     isPublic: boolean;
